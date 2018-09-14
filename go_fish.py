@@ -47,7 +47,11 @@ def main():
     states = shuf.apply(states)
 
     # Deal 5 cards - configure this depending on # of players
-    for i in range(5):
+    num_cards = 7
+    if players > 3:
+        num_cards = 5
+
+    for i in range(num_cards):
         for index, player in enumerate(states[-1].players):
             deal = deal_card(states[-1], index)
             states = deal.apply(states)
