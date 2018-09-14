@@ -68,10 +68,7 @@ def main():
             move = move_cpu(states[-1])
         states = move.apply(states)
 
-        if (
-            states[-1].players[states[-1].player].hand
-            == states[-2].players[states[-1].player].hand
-        ):
+        if not states[-1].players[states[-1].player].received:
             print("-> Go fish")
             move = Fish(states[-1].player)
             states = move.apply(states)
@@ -80,20 +77,25 @@ def main():
             move = Found(states[-1].player)
             states = move.apply(states)
 
-            print("Found match")
             print(
                 "Asked for {0}, found {1}".format(
                     states[-1].asked, states[-1].players[states[-1].player].found[-1]
                 )
             )
 
-            if states[-1].asked != states[-1].players[states[-1].player].found[-1][0]:
+        print(
+            "{0} asked for {1}, got {2}".format(
+                states[-1].player,
+                states[-1].asked,
+                states[-1].players[states[-1].player].received,
+            )
+        )
+
+        if states[-1].players[states[-1].player].received:
+            if states[-1].asked != states[-1].players[states[-1].player].received[0][0]:
                 move = Next()
                 states = move.apply(states)
-            else:
-                print("Got what I wanted!")
         else:
-            print("Didn't find match")
             move = Next()
             states = move.apply(states)
 
@@ -147,10 +149,6 @@ class Ask(namedtuple("_Ask", "card player target")):
                 if card[0] == self.card
             ]
         )
-
-        if found_cards:
-            print("Found cards:")
-            pprint(found_cards)
 
         if not found_cards:
             return game_states + (game_states[-1].didnt_find(self.card),)
@@ -277,6 +275,7 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
                 PlayerState(
                     self.players[player].hand + (self.deck[-1],),
                     self.players[player].found,
+                    (self.deck[-1],),
                 ),
             ),
             self.player,
@@ -296,8 +295,6 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
             ]
         )
 
-        pprint(cards)
-
         return GameState(
             self.deck,
             replace(
@@ -306,6 +303,7 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
                 PlayerState(
                     remove(self.players[player].hand, cards),
                     self.players[player].found + cards,
+                    self.players[player].received,
                 ),
             ),
             self.player,
@@ -313,7 +311,20 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
         )
 
     def didnt_find(self, card):
-        return GameState(self.deck, self.players, self.player, card)
+        return GameState(
+            self.deck,
+            replace(
+                self.players,
+                self.player,
+                PlayerState(
+                    self.players[self.player].hand,
+                    self.players[self.player].found,
+                    tuple(),
+                ),
+            ),
+            self.player,
+            card,
+        )
 
     def move_cards(self, source, dest, cards):
         # TODO Block moving 4 cards?
@@ -327,21 +338,24 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
                     PlayerState(
                         remove(self.players[source].hand, cards),
                         self.players[source].found,
+                        tuple(),
                     ),
                 ),
                 dest,
-                PlayerState(self.players[dest].hand + cards, self.players[dest].found),
+                PlayerState(
+                    self.players[dest].hand + cards, self.players[dest].found, cards
+                ),
             ),
             self.player,
             cards[0][0],
         )
 
 
-class PlayerState(namedtuple("_Player", ["hand", "found"])):
+class PlayerState(namedtuple("_Player", ["hand", "found", "received"])):
     pass
 
 
-PlayerState.__new__.__defaults__ = (tuple(), tuple())
+PlayerState.__new__.__defaults__ = (tuple(), tuple(), tuple())
 
 
 def replace(tpl, idx, value):
