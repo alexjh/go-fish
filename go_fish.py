@@ -212,7 +212,9 @@ def parse_request(request):
 
 
 def get_cards():
-    return tuple([(card, suit) for card in range(1, 14) for suit in "cdhs"])
+    deck = [(card, suit) for card in range(1, 14) for suit in "cdhs"]
+    random.shuffle(deck)
+    return tuple(deck)
 
 
 def get_players(num_players):
