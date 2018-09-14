@@ -41,18 +41,6 @@ def main():
         GameState(get_cards(), get_players(players), random.randint(0, players - 1)),
     )
 
-    shuf = shuffle_cards(states[-1])
-    states = shuf.apply(states)
-
-    # Deal 5 cards - configure this depending on # of players
-    num_cards = 7
-    if players > 3:
-        num_cards = 5
-
-    for i in range(num_cards):
-        for index, player in enumerate(states[-1].players):
-            deal = deal_card(states[-1], index)
-            states = deal.apply(states)
 
     # AJH Deal with initial matches?
     # If they have a match, can a player ask for a card?
@@ -60,6 +48,12 @@ def main():
 
     # Deck is in intial state, so start playing until the game is done
     while not states[-1].is_finished:
+        if states[-1].needs_dealing:
+            for i in range(get_dealt_cards(players)):
+                for index, player in enumerate(states[-1].players):
+                    deal = deal_card(states[-1], index)
+                    states = deal.apply(states)
+
         if states[-1].player == 0:
             move = move_human(states[-1])
         else:
@@ -221,6 +215,14 @@ def get_players(num_players):
     return (PlayerState(),) * num_players
 
 
+def get_dealt_cards(num_players):
+    # Deal 5 cards - configure this depending on # of players
+    num_cards = 7
+    if num_players > 3:
+        num_cards = 5
+    return num_cards
+
+
 class GameState(namedtuple("_Game", ["deck", "players", "player"])):
     @property
     def has_match(self):
@@ -236,9 +238,18 @@ class GameState(namedtuple("_Game", ["deck", "players", "player"])):
         return False
 
     @property
+    def needs_dealing(self):
+        dealt_cards = get_dealt_cards(len(self.players))
+
+        return len(self.deck) + dealt_cards > 52
+
+    @property
     def is_finished(self):
         if not self.deck:
             return True
+
+        if self.needs_dealing:
+            return False
 
         for player in self.players:
             if not player.hand:
