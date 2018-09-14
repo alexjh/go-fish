@@ -38,9 +38,7 @@ def main():
     players = int(input("Enter number of players: "))
 
     states = (
-        GameState(
-            get_cards(), get_players(players), random.randint(0, players - 1), -1
-        ),
+        GameState(get_cards(), get_players(players), random.randint(0, players - 1)),
     )
 
     shuf = shuffle_cards(states[-1])
@@ -79,20 +77,24 @@ def main():
 
             print(
                 "Asked for {0}, found {1}".format(
-                    states[-1].asked, states[-1].players[states[-1].player].found[-1]
+                    states[-1].players[states[-1].player].asked,
+                    states[-1].players[states[-1].player].found[-1],
                 )
             )
 
         print(
             "{0} asked for {1}, got {2}".format(
                 states[-1].player,
-                states[-1].asked,
+                states[-1].players[states[-1].player].asked,
                 states[-1].players[states[-1].player].received,
             )
         )
 
         if states[-1].players[states[-1].player].received:
-            if states[-1].asked != states[-1].players[states[-1].player].received[0][0]:
+            if (
+                states[-1].players[states[-1].player].asked
+                != states[-1].players[states[-1].player].received[0][0]
+            ):
                 move = Next()
                 states = move.apply(states)
         else:
@@ -217,7 +219,7 @@ def get_players(num_players):
     return (PlayerState(),) * num_players
 
 
-class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
+class GameState(namedtuple("_Game", ["deck", "players", "player"])):
     @property
     def has_match(self):
         if not self.players[self.player].hand:
@@ -253,11 +255,11 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
         deck = list(self.deck)
         random.shuffle(deck)
 
-        return GameState(tuple(deck), self.players, self.player, self.asked)
+        return GameState(tuple(deck), self.players, self.player)
 
     def next_player(self):
         return GameState(
-            self.deck, self.players, (self.player + 1) % len(self.players), -1
+            self.deck, self.players, (self.player + 1) % len(self.players),
         )
 
     def fish(self, player):
@@ -276,10 +278,10 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
                     self.players[player].hand + (self.deck[-1],),
                     self.players[player].found,
                     (self.deck[-1],),
+                    self.players[player].asked,
                 ),
             ),
             self.player,
-            self.asked,
         )
 
     def found(self, player):
@@ -304,10 +306,10 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
                     remove(self.players[player].hand, cards),
                     self.players[player].found + cards,
                     self.players[player].received,
+                    self.players[player].asked,
                 ),
             ),
             self.player,
-            self.asked,
         )
 
     def didnt_find(self, card):
@@ -320,10 +322,10 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
                     self.players[self.player].hand,
                     self.players[self.player].found,
                     tuple(),
+                    card,
                 ),
             ),
             self.player,
-            card,
         )
 
     def move_cards(self, source, dest, cards):
@@ -339,23 +341,26 @@ class GameState(namedtuple("_Game", ["deck", "players", "player", "asked"])):
                         remove(self.players[source].hand, cards),
                         self.players[source].found,
                         tuple(),
+                        self.players[source].asked,
                     ),
                 ),
                 dest,
                 PlayerState(
-                    self.players[dest].hand + cards, self.players[dest].found, cards
+                    self.players[dest].hand + cards,
+                    self.players[dest].found,
+                    cards,
+                    cards[0][0],
                 ),
             ),
             self.player,
-            cards[0][0],
         )
 
 
-class PlayerState(namedtuple("_Player", ["hand", "found", "received"])):
+class PlayerState(namedtuple("_Player", ["hand", "found", "received", "asked"])):
     pass
 
 
-PlayerState.__new__.__defaults__ = (tuple(), tuple(), tuple())
+PlayerState.__new__.__defaults__ = (tuple(), tuple(), tuple(), tuple())
 
 
 def replace(tpl, idx, value):
