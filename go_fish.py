@@ -15,8 +15,8 @@ def deal_card(state, player):
 
 def move_human(state):
     print("Player:")
-    pprint(state.players[state.player].hand)
-    pprint(state.players[state.player].found)
+    pprint(sorted(state.players[state.player].hand))
+    pprint(sorted(state.players[state.player].found))
 
     request = input("Enter card to request: <Player> <Card>, ? for help ")
     target, card = request.split()
