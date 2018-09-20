@@ -97,17 +97,37 @@ def main():
 
     pprint(states[-1])
 
-    winner = []
+    print("Winner: ")
+    pprint(find_winner(states))
+
+
+def find_winner(states):
+    """
+
+    Find the players with the highest counts of cards. Note that there can be
+    multiple winners.
+
+    >>> states = (GameState((), (PlayerState(), PlayerState()), 0),)
+    >>> find_winner(states)
+    [0, 1]
+    >>> states = (GameState((), (PlayerState(found=(1,2)), PlayerState(found=(1,2))), 0),)
+    >>> find_winner(states)
+    [0, 1]
+    >>> states = (GameState((), (PlayerState(), PlayerState(found=(1,2))), 0),)
+    >>> find_winner(states)
+    [1]
+    """
+
+    winners = []
     count = 0
     for index, player in enumerate(states[-1].players):
         if len(player.found) == count:
-            winner.append(index)
+            winners.append(index)
         if len(player.found) > count:
-            winner = [index]
+            winners = [index]
             count = len(player.found)
 
-    print("Winner: ")
-    pprint(winner)
+    return winners
 
 
 class Shuffle(namedtuple("_Shuffle", "")):
@@ -216,7 +236,13 @@ def get_players(num_players):
 
 
 def get_dealt_cards(num_players):
-    # Deal 5 cards - configure this depending on # of players
+    """
+
+    >>> get_dealt_cards(2)
+    7
+    >>> get_dealt_cards(4)
+    5
+    """
     num_cards = 7
     if num_players > 3:
         num_cards = 5
